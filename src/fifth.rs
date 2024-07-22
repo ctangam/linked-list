@@ -1,8 +1,8 @@
-use std::mem;
+use std::ptr;
 
-pub struct List<'a, T> {
+pub struct List<T> {
     head: Link<T>,
-    tail: Option<&'a mut Node<T>>,
+    tail: *mut Node<T>,
 }
 
 type Link<T> = Option<Box<Node<T>>>;
@@ -21,36 +21,37 @@ impl <T> Node<T> {
     }
 }
 
-impl<'a, T> List<'a, T> {
+impl<T> List<T> {
     pub fn new() -> Self {
         Self {
             head: None,
-            tail: None,
+            tail: ptr::null_mut(),
         }
     }
 
-    pub fn push(&'a mut self, elem: T) {
+    pub fn push(&mut self, elem: T) {
         let new_tail = Box::new(Node::new(elem));
-        let new_tail = match self.tail.take() {
-            Some(old_tail) => {
-                old_tail.next = Some(new_tail);
-                old_tail.next.as_deref_mut()
-            }
-            None => {
-                self.head = Some(new_tail);
-                self.head.as_deref_mut()
-            }
-        };
+        
+        if !self.tail.is_null() {
+            unsafe {
+                (*self.tail).next = Some(new_tail);
 
-        self.tail = new_tail;
+
+                self.tail = (*self.tail).next.as_deref_mut().unwrap() as *mut _;
+            }
+        } else {
+            self.head = Some(new_tail);
+
+            self.tail = self.head.as_deref_mut().unwrap() as *mut _;
+        }
     }
 
-    pub fn pop(&'a mut self) -> Option<T> {
+    pub fn pop(&mut self) -> Option<T> {
         self.head.take().map(|head| {
             self.head = head.next;
 
             if self.head.is_none() {
-                self.tail = None;
+                self.tail = ptr::null_mut();
             }
 
             head.elem
@@ -88,6 +89,7 @@ mod test {
         // Check exhaustion
         assert_eq!(list.pop(), Some(5));
         assert_eq!(list.pop(), None);
+        
     }
 }
 
