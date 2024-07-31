@@ -1,4 +1,3 @@
-
 pub struct IntoIter<T>(List<T>);
 
 impl<T> Iterator for IntoIter<T> {

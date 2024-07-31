@@ -51,13 +51,13 @@ pub struct Iter<'a, T>(Option<Ref<'a, Node<T>>>);
 //             let (next, elem) = Ref::map_split(node_ref, |node| {
 //                 (&node.next, &node.elem)
 //             });
-    
+
 //             self.0 = if next.is_some() {
 //                 Some(Ref::map(next, |next| &**next.as_ref().unwrap()))
 //             } else {
 //                 None
 //             };
-    
+
 //             elem
 //         })
 //     }
