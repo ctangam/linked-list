@@ -5,3 +5,4 @@ pub mod second;
 pub mod sixth;
 pub mod third;
 pub mod silly1;
+pub mod silly2;
