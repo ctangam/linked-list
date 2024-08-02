@@ -37,7 +37,7 @@ impl List {
                 self.head = node.next;
                 Some(node.elem)
             }
-        }    
+        }
     }
 }
 
@@ -54,7 +54,7 @@ impl Drop for List {
         // }
 
         // while let Some(_) = self.pop() {
-            
+
         // }
     }
 }
