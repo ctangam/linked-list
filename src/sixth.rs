@@ -499,32 +499,110 @@ impl<'a, T> CursorMut<'a, T> {
         }
     }
 
+    pub fn split_after(&mut self) -> LinkedList<T> {
+        if let Some(cur) = self.cur {
+            unsafe {
+                let old_len = self.list.len;
+                let old_idx = self.index.unwrap();
+                let after = (*cur.as_ptr()).back;
+
+                let new_len = old_idx + 1;
+                let new_front = self.list.front;
+                let new_back = self.cur;
+                let new_idx = Some(old_idx);
+
+                let output_len = old_len - new_len;
+                let output_front = after;
+                let output_back = self.list.back;
+
+                if let Some(after) = after {
+                    (*cur.as_ptr()).back = None;
+                    (*after.as_ptr()).front = None;
+                }
+
+                self.list.front = new_front;
+                self.list.back = new_back;
+                self.list.len = new_len;
+                self.index = new_idx;
+
+                LinkedList {
+                    front: output_front,
+                    back: output_back,
+                    len: output_len,
+                    _boo: PhantomData,
+                }
+            }
+        } else {
+            mem::replace(self.list, LinkedList::new())
+        }
+    }
+
     pub fn splice_before(&mut self, mut input: LinkedList<T>) {
         unsafe {
             if input.is_empty() {
 
             } else if let Some(cur) = self.cur {
-                if let Some(0) = self.index {
-                    (*cur.as_ptr()).front = input.back.take();
-                    (*input.back.unwrap().as_ptr()).back = Some(cur);
-                    self.list.front = input.front.take();
-
-                    *self.index.as_mut().unwrap() += input.len;
-                    
-                    self.list.len += input.len;
-                    input.len = 0;
+                let in_front = input.front.take().unwrap();
+                let in_back = input.back.take().unwrap();
+            
+                if let Some(prev) = (*cur.as_ptr()).front {
+                    // General Case, no boundaries, just internal fixups
+                    (*prev.as_ptr()).back = Some(in_front);
+                    (*in_front.as_ptr()).front = Some(prev);
+                    (*cur.as_ptr()).front = Some(in_back);
+                    (*in_back.as_ptr()).back = Some(cur);
                 } else {
-
+                    // No prev, we're appending to the front
+                    (*cur.as_ptr()).front = Some(in_back);
+                    (*in_back.as_ptr()).back = Some(cur);
+                    self.list.front = Some(in_front);
                 }
+                *self.index.as_mut().unwrap() += input.len;
+
             } else if let Some(back) = self.list.back {
                 (*back.as_ptr()).back = input.front.take();
                 (*input.front.unwrap().as_ptr()).front = Some(back);
                 self.list.back = input.back;
-                
-                self.list.len += input.len;
             } else {
-                *self.list = input;
+                mem::swap(self.list, &mut input);
             }
+
+            self.list.len += input.len;
+            input.len = 0;
+        }
+    }
+
+    pub fn splice_after(&mut self, mut input: LinkedList<T>) {
+        unsafe {
+            if input.is_empty() {
+
+            } else if let Some(cur) = self.cur {
+                let in_front = input.front.take().unwrap();
+                let in_back = input.back.take().unwrap();
+
+                if let Some(next) = (*cur.as_ptr()).back {
+                    // General Case, no boundaries, just internal fixups
+                    (*next.as_ptr()).front = Some(in_back);
+                    (*in_back.as_ptr()).back = Some(next);
+                    (*cur.as_ptr()).back = Some(in_front);
+                    (*in_front.as_ptr()).front = Some(cur);
+                } else {
+                    // No next, we're appending to the back
+                    (*cur.as_ptr()).back = Some(in_front);
+                    (*in_front.as_ptr()).front = Some(cur);
+                    self.list.back = Some(in_back);
+                }
+            } else if let Some(front) = self.list.front {
+                (*front.as_ptr()).front = input.back;
+                (*input.back.unwrap().as_ptr()).back = Some(front);
+                self.list.front = input.front;
+
+            } else {
+                mem::swap(self.list, &mut input);
+            }
+
+            self.list.len += input.len;
+            input.len = 0;
         }
     }
 }
