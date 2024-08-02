@@ -49,13 +49,16 @@ pub struct Iter<'a, T>(Option<Ref<'a, Node<T>>>);
 
 //     fn next(&mut self) -> Option<Self::Item> {
 //         self.0.take().map(|node_ref| {
-//             let (next, elem) = Ref::map_split(node_ref, |node| (&node.next, &node.elem));
+//             let (next, elem) = Ref::map_split(node_ref, |node| {
+//                 (&node.next, &node.elem)
+//             });
+    
 //             self.0 = if next.is_some() {
 //                 Some(Ref::map(next, |next| &**next.as_ref().unwrap()))
 //             } else {
 //                 None
 //             };
-
+    
 //             elem
 //         })
 //     }
